@@ -1,0 +1,43 @@
+services:
+  database:
+    image: postgres
+    container_name: carbon-intensity-db
+    restart: always
+    shm_size: 128mb
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER:-carbon}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-carbon}
+      POSTGRES_DB: ${DB_NAME:-carbon}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-q',
+          '-d',
+          '${DB_NAME:-carbon}',
+          '-U',
+          '${DB_PASSWORD:-carbon}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  api:
+    image: carbon-intensity-api
+    container_name: carbon-intensity-api
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: always
+    ports:
+      - '3000:3000'
+    environment:
+      DB_NAME: ${DB_NAME:-carbon}
+      DB_USER: ${DB_USER:-carbon}
+      DB_HOST: ${DB_HOST:-database}
+      DB_PASSWORD: ${DB_PASSWORD:-carbon}
+      DB_PORT: ${DB_PORT:-carbon}

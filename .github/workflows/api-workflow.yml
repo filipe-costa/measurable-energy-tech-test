@@ -1,0 +1,93 @@
+name: Measurable Energy API workflow
+on:
+  push:
+    branches: ["main"]
+    paths: ["api/**"]
+defaults:
+  run:
+    working-directory: ./api
+jobs:
+  # In production - you could potentially create an artifact so it can be reused between all the jobs (depending on how fast it is)
+  # ci:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "23.x"
+  #     - run: npm ci
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Install node_modules
+        run: npm ci
+      - name: Run eslint
+        run: npm run lint
+  unit-test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Install node_modules
+        run: npm ci
+      - name: Run unit test with coverage
+        run: npm run test:cov
+  it-test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Install node_modules
+        run: npm ci
+      - name: Run integration test with coverage
+        run: npm run test:it:cov
+  # Can run this here and then pass the artifact to the next job to build the docker image
+  # build:
+  #   needs: [lint, unit-test, it-test]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  # - name: Checkout code
+  #   uses: actions/checkout@v4
+  #     - name: Setup node
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: "23.x"
+  #     - name: Install node_modules
+  #       run: npm ci
+  #     - name: Build production app
+  #       run: npm run build
+  docker:
+    needs: [lint, unit-test, it-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Build docker image
+        # Tag image with sha but could also use versioning if that is the case
+        run: docker buildx build -t carbon-intensity-api .
+      - name: List docker image
+        run: docker images | grep carbon
+      - name: Push to docker registry
+        run: |
+          echo Fake Push to Docker Registry

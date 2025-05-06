@@ -1,0 +1,36 @@
+name: Measurable Energy UI workflow
+on:
+  push:
+    branches: ["main"]
+    paths: ["ui/**"]
+defaults:
+  run:
+    working-directory: ./ui
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Install node_modules
+        run: npm ci
+      - name: Run eslint
+        run: npm run lint
+  build:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "23.x"
+      - name: Install node_modules
+        run: npm ci
+      - name: Build production app
+        run: npm run build
